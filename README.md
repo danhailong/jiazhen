@@ -1,3 +1,4 @@
+12 /09 日 
 // Copydlg.cpp : implementation file
 //
 
@@ -423,7 +424,7 @@ void CDiancaidlg::OnOK()
 
 
 
-
+// 12/10 日 
 // Jiacaidlg.cpp : implementation file
 //
 
