@@ -841,3 +841,578 @@ void CJiezhangdlg::OnEditchangeCombo1()
 	}
 }
 
+
+//12 月 11 日
+
+//进货
+// Jinhuodlg.cpp : implementation file
+//
+
+#include "stdafx.h"
+#include "餐饮管理.h"
+#include "Jinhuodlg.h"
+
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#undef THIS_FILE
+static char THIS_FILE[] = __FILE__;
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// CJinhuodlg dialog
+
+extern CMyApp theApp;
+CJinhuodlg::CJinhuodlg(CWnd* pParent /*=NULL*/)
+	: CDialog(CJinhuodlg::IDD, pParent)
+{
+	//{{AFX_DATA_INIT(CJinhuodlg)
+	//}}AFX_DATA_INIT
+}
+
+
+void CJinhuodlg::DoDataExchange(CDataExchange* pDX)
+{
+	CDialog::DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CJinhuodlg)
+	DDX_Control(pDX, IDC_EDIT_totle, m_Totle);
+	DDX_Control(pDX, IDC_LIST_foodbill, m_FoodBill);
+	DDX_Control(pDX, IDC_LIST_foodlist, m_FoodList);
+	DDX_Control(pDX, IDC_EDIT_time, m_Times);
+	DDX_Control(pDX, IDC_EDIT_shuliang, m_ShuLiang);
+	//}}AFX_DATA_MAP
+}
+
+
+BEGIN_MESSAGE_MAP(CJinhuodlg, CDialog)
+	//{{AFX_MSG_MAP(CJinhuodlg)
+	ON_BN_CLICKED(IDC_BUTTON_jinhuo, OnBUTTONjinhuo)
+	ON_BN_CLICKED(IDC_BUTTON_tuihuo, OnBUTTONtuihuo)
+	ON_BN_CLICKED(IDC_BUTTON_reset, OnBUTTONreset)
+	ON_BN_CLICKED(IDC_BUTTON_tuichu, OnBUTTONtuichu)
+	ON_BN_CLICKED(IDC_BUTTON_queding, OnBUTTONqueding)
+
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()
+
+/////////////////////////////////////////////////////////////////////////////
+// CJinhuodlg message handlers
+
+BOOL CJinhuodlg::OnInitDialog()
+{
+	CDialog::OnInitDialog();
+	CTime time;
+	time=CTime::GetCurrentTime();
+	m_Time=time.Format("%Y-%m-%d");
+	m_Times.SetWindowText(m_Time);
+	m_FoodList.SetExtendedStyle(LVS_EX_FLATSB|LVS_EX_FULLROWSELECT|LVS_EX_HEADERDRAGDROP|LVS_EX_ONECLICKACTIVATE|LVS_EX_GRIDLINES);
+	m_FoodList.InsertColumn(0,"商品名",LVCFMT_LEFT,80,0);
+	m_FoodList.InsertColumn(1,"单价(元)",LVCFMT_LEFT,100,1);
+	m_pRs=theApp.m_pCon->Execute((_bstr_t)("select * from shangpininfo"),NULL,adCmdText);
+	while(!m_pRs->adoEOF)
+	{
+		CString Value1,Value2;
+		Value1=(char*)(_bstr_t)m_pRs->GetCollect("商品名");
+		Value2=(char*)(_bstr_t)m_pRs->GetCollect("商品单价");
+		m_FoodList.InsertItem(0,"");
+		m_FoodList.SetItemText(0,0,Value1);
+		m_FoodList.SetItemText(0,1,Value2);		
+		m_pRs->MoveNext();
+	}
+	m_FoodBill.SetExtendedStyle(LVS_EX_FLATSB|LVS_EX_FULLROWSELECT|LVS_EX_HEADERDRAGDROP|LVS_EX_ONECLICKACTIVATE|LVS_EX_GRIDLINES);
+	m_FoodBill.InsertColumn(0,"商品名",LVCFMT_LEFT,80,0);
+	m_FoodBill.InsertColumn(1,"数量(斤)",LVCFMT_LEFT,100,1);
+	m_Totle.SetWindowText("0");
+	m_ShuLiang.SetWindowText("1");
+	return TRUE;
+}
+double totle=0;
+
+void CJinhuodlg::OnBUTTONjinhuo() 
+{
+	UpdateData();
+	int n=m_FoodList.GetSelectionMark();
+	if(n==-1)
+	{
+		AfxMessageBox("请选择一样商品");
+		return;
+	}
+	CString name=m_FoodList.GetItemText(n,0);
+	CString price=m_FoodList.GetItemText(n,1);
+	CString shuliang,Mytotle;
+	m_ShuLiang.GetWindowText(shuliang);
+	if(shuliang.IsEmpty()||shuliang=="0")
+	{
+		AfxMessageBox("数量至少为1斤");
+		return;
+	}
+	m_FoodBill.InsertItem(0,"");
+	m_FoodBill.SetItemText(0,0,name);
+	m_FoodBill.SetItemText(0,1,shuliang);	
+	totle+=atof(price)*atof(shuliang);
+	Mytotle=(char*)(_bstr_t)totle;
+	m_Totle.SetWindowText(Mytotle);
+	UpdateData(false);
+
+}
+
+void CJinhuodlg::OnBUTTONtuihuo() 
+{
+	UpdateData();
+	CString Mytotle;
+	m_Totle.GetWindowText(Mytotle);
+	totle=atof(Mytotle);
+	int n=m_FoodBill.GetSelectionMark();
+	CString str=m_FoodBill.GetItemText(n,0);
+	CString shuliang=m_FoodBill.GetItemText(n,1);
+	m_FoodBill.DeleteItem(n);
+	CString str1;
+	int i=m_FoodList.GetItemCount();
+	for(int j=0;j<i;j++)
+	{
+		str1=m_FoodList.GetItemText(j,0);
+		if(str==str1)
+		{
+			CString price=m_FoodList.GetItemText(j,1);
+			totle-=atof(price)*atof(shuliang);
+			break;
+		}
+	}
+	Mytotle=(char*)(_bstr_t)totle;
+	m_Totle.SetWindowText(Mytotle);
+	UpdateData(false);
+
+}
+
+
+
+void CJinhuodlg::OnBUTTONreset() 
+{
+	m_FoodBill.DeleteAllItems();
+	m_Totle.SetWindowText("0");
+	totle=0;
+}
+
+void CJinhuodlg::OnBUTTONtuichu() 
+{
+	CDialog::OnCancel();
+}
+
+void CJinhuodlg::OnBUTTONqueding() 
+{
+	UpdateData();
+	m_Times.GetWindowText(m_Time);
+	int i=m_FoodBill.GetItemCount();
+	int n=m_FoodList.GetItemCount();
+	CString sql,name,shuliang,Mtotle,str,price;
+	for(int j=0;j<i;j++)
+	{
+		name=m_FoodBill.GetItemText(j,0);
+		shuliang=m_FoodBill.GetItemText(j,1);	
+		for(int k=0;k<n;k++)
+		{
+			str=m_FoodList.GetItemText(k,0);
+			if(name==str)
+			{
+				price=m_FoodList.GetItemText(k,1);
+				totle=atof(price)*atof(shuliang);
+				break;
+			}
+		}
+		Mtotle=(char*)(_bstr_t)price;
+		sql="insert into jinhuoinfo(进货时间,商品名,商品数量,商品价格)values('"+m_Time+"','"+name+"',"+shuliang+","+Mtotle+")";
+		theApp.m_pCon->Execute((_bstr_t)sql,NULL,adCmdText);
+	}
+	CDialog::OnOK();
+}
+
+
+//进货选择
+// Jinhuoselect.cpp : implementation file
+//
+
+#include "stdafx.h"
+#include "餐饮管理.h"
+#include "Jinhuoselect.h"
+
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#undef THIS_FILE
+static char THIS_FILE[] = __FILE__;
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// CJinhuoselect dialog
+
+extern CMyApp theApp;
+CJinhuoselect::CJinhuoselect(CWnd* pParent /*=NULL*/)
+	: CDialog(CJinhuoselect::IDD, pParent)
+{
+	//{{AFX_DATA_INIT(CJinhuoselect)
+		// NOTE: the ClassWizard will add member initialization here
+	//}}AFX_DATA_INIT
+}
+
+
+void CJinhuoselect::DoDataExchange(CDataExchange* pDX)
+{
+	CDialog::DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CJinhuoselect)
+	DDX_Control(pDX, IDC_LIST1, m_Jinhuoinfo);
+	DDX_Control(pDX, IDC_COMBO_year, m_Yearcombo);
+	DDX_Control(pDX, IDC_COMBO_month, m_Monthcombo);
+	DDX_Control(pDX, IDC_COMBO_day, m_Daycombo);
+	//}}AFX_DATA_MAP
+}
+
+
+BEGIN_MESSAGE_MAP(CJinhuoselect, CDialog)
+	//{{AFX_MSG_MAP(CJinhuoselect)
+	ON_BN_CLICKED(IDC_CHAXUN_BUTTON, OnChaxunButton)
+	ON_BN_CLICKED(IDC_TUICHU_BUTTON, OnTuichuButton)
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()
+
+/////////////////////////////////////////////////////////////////////////////
+// CJinhuoselect message handlers
+
+BOOL CJinhuoselect::OnInitDialog() 
+{
+	CDialog::OnInitDialog();	
+	CString sql;
+	CString str;
+	sql="select distinct Year(进货时间) as 年份 from jinhuoinfo ";
+	m_pRs=theApp.m_pCon->Execute((_bstr_t)sql,NULL,adCmdText);
+	while(m_pRs->adoEOF==0)
+	{
+		str=(char*)(_bstr_t)m_pRs->GetCollect("年份");
+		m_Yearcombo.AddString(str);	
+		m_pRs->MoveNext();
+	}
+	
+	sql="select distinct Month(进货时间) as 月份 from jinhuoinfo ";
+	m_pRs=theApp.m_pCon->Execute((_bstr_t)sql,NULL,adCmdText);
+	while(m_pRs->adoEOF==0)
+	{
+		str=(char*)(_bstr_t)m_pRs->GetCollect("月份");
+		m_Monthcombo.AddString(str);	
+		m_pRs->MoveNext();
+	}
+	
+	sql="select distinct Day(进货时间) as 日期 from jinhuoinfo ";
+	m_pRs=theApp.m_pCon->Execute((_bstr_t)sql,NULL,adCmdText);
+	while(m_pRs->adoEOF==0)
+	{
+		str=(char*)(_bstr_t)m_pRs->GetCollect("日期");
+		m_Daycombo.AddString(str);	
+		m_pRs->MoveNext();
+	}
+	m_Jinhuoinfo.SetExtendedStyle(LVS_EX_FLATSB|LVS_EX_FULLROWSELECT|LVS_EX_HEADERDRAGDROP|LVS_EX_ONECLICKACTIVATE|LVS_EX_GRIDLINES);
+	m_Jinhuoinfo.InsertColumn(0,"商品名",LVCFMT_LEFT,60,0);
+	m_Jinhuoinfo.InsertColumn(1,"数量(斤)",LVCFMT_LEFT,80,1);
+	m_Jinhuoinfo.InsertColumn(2,"价格(元)",LVCFMT_LEFT,80,2);
+	return TRUE;  // return TRUE unless you set the focus to a control
+	              // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CJinhuoselect::OnChaxunButton() 
+{	
+	m_Jinhuoinfo.DeleteAllItems();
+	UpdateData();
+	CString year,month,day,totle;
+	if(m_Yearcombo.GetCurSel()==-1||m_Monthcombo.GetCurSel()==-1||m_Daycombo.GetCurSel()==-1)
+	{
+		AfxMessageBox("请选择一个时间");
+		return;
+	}
+	m_Yearcombo.GetLBText(m_Yearcombo.GetCurSel(),year);
+	m_Monthcombo.GetLBText(m_Monthcombo.GetCurSel(),month);
+	m_Daycombo.GetLBText(m_Daycombo.GetCurSel(),day);
+	CString sql="select * from jinhuoinfo where Year(进货时间)="+year+" and Month(进货时间)="+month+" and Day(进货时间)="+day+"";
+	m_pRs=theApp.m_pCon->Execute((_bstr_t)sql,NULL,adCmdText);
+	while(m_pRs->adoEOF==0)
+	{
+		CString name,sum,price;
+		name=(char*)(_bstr_t)m_pRs->GetCollect("商品名");
+		sum=(char*)(_bstr_t)m_pRs->GetCollect("商品数量");
+		price=(char*)(_bstr_t)m_pRs->GetCollect("商品价格");
+		m_Jinhuoinfo.InsertItem(0,"");
+		m_Jinhuoinfo.SetItemText(0,0,name);
+		m_Jinhuoinfo.SetItemText(0,1,sum);
+		m_Jinhuoinfo.SetItemText(0,2,price);
+		m_pRs->MoveNext();
+	}
+}
+
+void CJinhuoselect::OnTuichuButton() 
+{
+	CDialog::OnCancel();	
+}
+
+void CJinhuoselect::OnOK()
+{
+	OnChaxunButton();
+}
+//开台
+// Kaitaidlg.cpp : implementation file
+//
+
+#include "stdafx.h"
+#include "餐饮管理.h"
+#include "Kaitaidlg.h"
+#include "Diancaidlg.h"
+
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#undef THIS_FILE
+static char THIS_FILE[] = __FILE__;
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// CKaitaidlg dialog
+extern CMyApp theApp;
+
+
+CKaitaidlg::CKaitaidlg(CWnd* pParent /*=NULL*/)
+	: CDialog(CKaitaidlg::IDD, pParent)
+{
+	//{{AFX_DATA_INIT(CKaitaidlg)
+	
+	//}}AFX_DATA_INIT
+}
+
+
+void CKaitaidlg::DoDataExchange(CDataExchange* pDX)
+{
+	CDialog::DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CKaitaidlg)
+	DDX_Control(pDX, IDC_LIST1, m_Zhuolist);
+	DDX_Text(pDX, IDC_EDIT1, m_ZhuoHao);
+	//}}AFX_DATA_MAP
+}
+
+
+BEGIN_MESSAGE_MAP(CKaitaidlg, CDialog)
+	//{{AFX_MSG_MAP(CKaitaidlg)
+	ON_BN_CLICKED(IDC_BUTTON_OK, OnButtonOk)
+	ON_BN_CLICKED(IDC_BUTTON_return, OnBUTTONreturn)
+	ON_NOTIFY(NM_DBLCLK, IDC_LIST1, OnDblclkList1)
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()
+
+/////////////////////////////////////////////////////////////////////////////
+// CKaitaidlg message handlers
+
+
+
+
+
+void CKaitaidlg::OnButtonOk() 
+{
+	UpdateData();
+
+	if(m_ZhuoHao.IsEmpty())
+		AfxMessageBox("桌号不能为空");
+	else
+	{	
+		CString Str="select * from TableUSE where TableUSEID=1";
+		m_pRs=theApp.m_pCon->Execute((_bstr_t)Str,NULL,adCmdText);
+		while(!m_pRs->adoEOF)
+		{
+			Value=(char*)(_bstr_t)m_pRs->GetCollect("桌号");
+			if(m_ZhuoHao==Value)
+			{
+				AfxMessageBox("有人了");
+				m_ZhuoHao="";
+				UpdateData(false);
+				return;
+			}
+			m_pRs->MoveNext();
+		}
+		m_pRs=NULL;
+		CString Str1="select * from TableUSE where 桌号="+m_ZhuoHao+"";
+		m_pRs=theApp.m_pCon->Execute((_bstr_t)Str1,NULL,adCmdText);
+		if(m_pRs->adoEOF)
+		{
+			
+			AfxMessageBox("没有这种餐台");
+			m_ZhuoHao="";
+			UpdateData(false);
+			return;
+			
+		}
+		m_pRs=NULL;
+		
+		CDiancaidlg dlg;
+		dlg.m_ZhuoHao = m_ZhuoHao;
+		dlg.DoModal();
+		CDialog::OnOK();	
+	}
+
+}
+
+void CKaitaidlg::OnBUTTONreturn() 
+{
+	CDialog::OnCancel();	
+}
+void CKaitaidlg::OnOK()
+{
+	OnButtonOk();
+}
+
+BOOL CKaitaidlg::OnInitDialog() 
+{
+	CDialog::OnInitDialog();
+	SetIcon(LoadIcon(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_ICON_kaitai)),TRUE);
+	m_Zhuolist.SetExtendedStyle(LVS_EX_FLATSB|LVS_EX_FULLROWSELECT|LVS_EX_HEADERDRAGDROP|LVS_EX_ONECLICKACTIVATE|LVS_EX_GRIDLINES);
+	m_Zhuolist.InsertColumn(0,"桌号",LVCFMT_LEFT,140,0);
+	m_Zhuolist.InsertColumn(1,"状态",LVCFMT_LEFT,140,1);
+	CString sql="select * from tableuse"; 
+	m_pRs=theApp.m_pCon->Execute((_bstr_t)sql,NULL,adCmdText);
+	int i=0;
+	while(m_pRs->adoEOF==0)
+	{
+		CString str=(char*)(_bstr_t)m_pRs->GetCollect("桌号");
+		int tableuseid=atoi((char*)(_bstr_t)m_pRs->GetCollect("tableuseid"));
+		m_Zhuolist.InsertItem(i,"");
+		m_Zhuolist.SetItemText(i,0,str);
+		if(tableuseid==0)
+			m_Zhuolist.SetItemText(i,1,"空闲");
+		if(tableuseid==1)
+			m_Zhuolist.SetItemText(i,1,"有人");
+		i++;
+		m_pRs->MoveNext();
+	}
+
+
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+	              // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CKaitaidlg::OnDblclkList1(NMHDR* pNMHDR, LRESULT* pResult) 
+{
+	CString str;
+	str=m_Zhuolist.GetItemText(m_Zhuolist.GetSelectionMark(),0);
+	m_ZhuoHao=str;
+	UpdateData(false);
+	*pResult = 0;
+}
+
+
+//登录
+// Logindlg.cpp : implementation file
+//
+
+#include "stdafx.h"
+#include "餐饮管理.h"
+#include "Logindlg.h"
+#include "餐饮管理Dlg.h"
+
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#undef THIS_FILE
+static char THIS_FILE[] = __FILE__;
+#endif
+extern CMyApp theApp;
+
+/////////////////////////////////////////////////////////////////////////////
+// CLogindlg dialog
+
+
+CLogindlg::CLogindlg(CWnd* pParent /*=NULL*/)
+	: CDialog(CLogindlg::IDD, pParent)
+{
+	//{{AFX_DATA_INIT(CLogindlg)
+	m_Uname = _T("");
+	m_Upasswd = _T("");
+	//}}AFX_DATA_INIT
+	i = 0;
+}
+
+
+void CLogindlg::DoDataExchange(CDataExchange* pDX)
+{
+	CDialog::DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CLogindlg)
+	DDX_Text(pDX, IDC_EDIT1, m_Uname);
+	DDX_Text(pDX, IDC_EDIT2, m_Upasswd);
+	//}}AFX_DATA_MAP
+}
+
+
+BEGIN_MESSAGE_MAP(CLogindlg, CDialog)
+	//{{AFX_MSG_MAP(CLogindlg)
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()
+
+/////////////////////////////////////////////////////////////////////////////
+// CLogindlg message handlers
+
+void CLogindlg::OnOK() 
+{
+	UpdateData();
+	if(!m_Uname.IsEmpty()||!m_Upasswd.IsEmpty())
+	{
+		CString sql="SELECT * FROM Login WHERE Uname='"+m_Uname+"' and Upasswd='"+m_Upasswd+"'";
+		try
+		{			
+			m_pRs.CreateInstance("ADODB.Recordset");
+			m_pRs->Open((_variant_t)sql,theApp.m_pCon.GetInterfacePtr(),adOpenDynamic,adLockOptimistic,adCmdText);
+			if(m_pRs->adoEOF)
+			{
+				AfxMessageBox("用户名或密码错误!");	
+				m_Uname="";
+				m_Upasswd="";
+				i++;
+				UpdateData(false);
+				if(i==3)
+				{
+					OnCancel();		
+				}
+				
+			}
+			else
+			{
+				theApp.name=m_Uname;
+				theApp.pwd=m_Upasswd;
+				CDialog::OnOK();
+				return;
+			}
+		}
+		catch(_com_error e)
+		{
+			CString temp;
+			temp.Format("连接数据库错误信息:%s",e.ErrorMessage());
+			AfxMessageBox(temp);
+			return;				
+		}
+	}
+	else
+	{
+		AfxMessageBox("用户名密码不能为空");
+	}
+}
+
+
+					
+
+
+
+	
+
+
+BOOL CLogindlg::OnInitDialog() 
+{
+	CDialog::OnInitDialog();
+	SetIcon(LoadIcon(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_ICON_login)),TRUE);	
+	return TRUE;  // return TRUE unless you set the focus to a control
+	              // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CLogindlg::OnCancel() 
+{
+	// TODO: Add extra cleanup here
+	
+	CDialog::OnCancel();
+}
+
